@@ -18,7 +18,7 @@
     }
     .btn-green { background-color: #4CAF50; color: white; }
     .btn-red { background-color: #F44336; color: white; }
-    /* 카메라 프리뷰 박스 */
+    /* 카메라 프리뷰 박스: video와 img 모두 배치 */
     .camera-box {
       border: 2px solid #ccc;
       width: 100%;
@@ -39,7 +39,7 @@
     }
     table { width: 100%; border-collapse: collapse; }
     th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
-    /* 버튼 행: 뒤로가기 버튼 왼쪽에 배치 */
+    /* 버튼 행: 뒤로가기 버튼 좌측 배치 */
     .button-row {
       display: flex;
       justify-content: flex-end;
@@ -108,8 +108,10 @@
     <input type="text" id="fireExtinguisherNumber" placeholder="소화기 위치 입력 (예시: A-01열)" />
     <br><br>
     <h3>소화기 위치를 촬영해주세요</h3>
+    <!-- 카메라 프리뷰 박스에 video와 img 모두 배치 -->
     <div class="camera-box">
-      <video id="locationVideo" autoplay playsinline></video>
+      <video id="locationVideo" autoplay playsinline style="display:block;"></video>
+      <img id="locationImg" style="display:none;" />
     </div>
     <div class="button-row">
       <button class="btn back" onclick="goToPage(1)">뒤로가기</button>
@@ -122,7 +124,8 @@
   <div id="page3" class="page">
     <h2>소화기의 압력게이지를 촬영해주세요</h2>
     <div class="camera-box">
-      <video id="gaugeVideo" autoplay playsinline></video>
+      <video id="gaugeVideo" autoplay playsinline style="display:block;"></video>
+      <img id="gaugeImg" style="display:none;" />
     </div>
     <div class="button-row">
       <button class="btn back" onclick="goToPage(2)">뒤로가기</button>
@@ -211,7 +214,9 @@
     let locationImageData = "";
     function startLocationCamera() {
       const video = document.getElementById("locationVideo");
-      // 초기 프리뷰 상태에서는 poster 속성을 비워줍니다.
+      const img = document.getElementById("locationImg");
+      img.style.display = "none";
+      video.style.display = "block";
       video.poster = "";
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
@@ -248,9 +253,9 @@
       }
       if(btn.innerText === "촬영하기") {
         captureLocationImage();
-        btn.innerText = "다시촬영";
+        btn.innerText = "다시 촬영";
       } else {
-        // 다시촬영: 카메라 스트림 재시작
+        // 다시 촬영: 카메라 스트림 재시작
         startLocationCamera();
         btn.innerText = "촬영하기";
         document.getElementById("nextButtonPage2").disabled = true;
@@ -259,6 +264,7 @@
     
     function captureLocationImage() {
       const video = document.getElementById("locationVideo");
+      const img = document.getElementById("locationImg");
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
@@ -270,10 +276,10 @@
       localStorage.setItem('fireExtinguisherNumber', fireExtinguisherNumber);
       localStorage.setItem('locationImage', locationImageData);
       stopAllVideoStreams();
-      // 캡처한 이미지를 video의 poster로 설정하여 프리뷰 유지
-      video.srcObject = null;
-      video.pause();
-      video.poster = locationImageData;
+      // 영상 대신 img 요소에 캡처한 이미지를 표시
+      video.style.display = "none";
+      img.src = locationImageData;
+      img.style.display = "block";
       document.getElementById("nextButtonPage2").disabled = false;
     }
     
@@ -282,6 +288,9 @@
     let gaugeImageData = "";
     function startGaugeCamera() {
       const video = document.getElementById("gaugeVideo");
+      const img = document.getElementById("gaugeImg");
+      img.style.display = "none";
+      video.style.display = "block";
       video.poster = "";
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
@@ -313,7 +322,7 @@
       const btn = document.getElementById("captureGaugeButton");
       if(btn.innerText === "촬영하기") {
         captureGaugeImage();
-        btn.innerText = "다시촬영";
+        btn.innerText = "다시 촬영";
       } else {
         startGaugeCamera();
         btn.innerText = "촬영하기";
@@ -323,6 +332,7 @@
     
     function captureGaugeImage() {
       const video = document.getElementById("gaugeVideo");
+      const img = document.getElementById("gaugeImg");
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
@@ -332,9 +342,9 @@
       gaugeCaptured = true;
       localStorage.setItem('gaugeImage', gaugeImageData);
       stopAllVideoStreams();
-      video.srcObject = null;
-      video.pause();
-      video.poster = gaugeImageData;
+      video.style.display = "none";
+      img.src = gaugeImageData;
+      img.style.display = "block";
       document.getElementById("nextButtonPage3").disabled = false;
     }
     
