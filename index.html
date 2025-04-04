@@ -10,7 +10,7 @@
     .btn {
       display: inline-block;
       padding: 10px 20px;
-      margin: 10px 5px; /* 좌우 간격 약간 */
+      margin: 10px 5px; /* 좌우 간격 조절 */
       border: none;
       border-radius: 10px;
       font-size: 16px;
@@ -39,7 +39,7 @@
     }
     table { width: 100%; border-collapse: collapse; }
     th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
-    /* 버튼 행: 뒤로가기 버튼 좌측 배치 */
+    /* 버튼 행: 뒤로가기 버튼를 왼쪽 배치 */
     .button-row {
       display: flex;
       justify-content: flex-end;
@@ -48,15 +48,21 @@
     .button-row .btn.back {
       margin-right: auto;
     }
+    /* 입력 필드 스타일 (페이지2) */
+    #fireExtinguisherNumber {
+      width: 100%;
+      max-width: 500px;
+      font-size: 18px;
+      padding: 8px;
+    }
   </style>
   
-  <!-- Firebase 초기화: ES 모듈 방식 (최신 SDK 사용) -->
+  <!-- Firebase 초기화: ES 모듈 방식 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-analytics.js";
     import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
     
-    // Firebase 콘솔에서 발급받은 구성 정보를 입력하세요.
     const firebaseConfig = {
       apiKey: "AIzaSyBOtHtUnIUq-CrdghMEnJusuXk3CSQ6VwE",
       authDomain: "fire-extinguisher-inspection.firebaseapp.com",
@@ -155,7 +161,7 @@
   <script>
     // 전역 변수: 편집 모드 사용 시 수정할 문서 ID 저장
     let editingDocId = null;
-    
+  
     // ---------- 페이지 전환 및 공통 함수 ----------
     function goToPage(pageNumber) {
       stopAllVideoStreams();
@@ -170,7 +176,6 @@
   
       if (pageNumber === 2) {
         startLocationCamera();
-        // 초기 상태: 촬영 버튼 문구를 "촬영하기"로, 다음 버튼 비활성화
         document.getElementById("captureLocationButton").innerText = "촬영하기";
         document.getElementById("nextButtonPage2").disabled = true;
       }
@@ -232,9 +237,14 @@
       }
     }
   
-    // toggle 함수: 촬영/다시촬영 버튼 (페이지 2)
     function toggleLocationCapture() {
       const btn = document.getElementById("captureLocationButton");
+      // 먼저, 입력란에 소화기 위치가 입력되었는지 확인
+      const locationInput = document.getElementById("fireExtinguisherNumber").value.trim();
+      if(locationInput === "") {
+        alert("소화기 위치를 입력해 주세요.");
+        return;
+      }
       if(btn.innerText === "촬영하기") {
         captureLocationImage();
         btn.innerText = "다시촬영";
@@ -254,11 +264,12 @@
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       locationImageData = canvas.toDataURL("image/png");
       locationCaptured = true;
+      // 저장: 소화기 위치 입력란의 값을 저장
       const fireExtinguisherNumber = document.getElementById("fireExtinguisherNumber").value.trim();
       localStorage.setItem('fireExtinguisherNumber', fireExtinguisherNumber);
       localStorage.setItem('locationImage', locationImageData);
       stopAllVideoStreams();
-      // 프리뷰 박스에 촬영본 유지
+      // 촬영한 이미지를 프리뷰 박스에 그대로 표시
       video.srcObject = null;
       video.src = locationImageData;
       document.getElementById("nextButtonPage2").disabled = false;
@@ -295,7 +306,6 @@
       }
     }
   
-    // toggle 함수: 촬영/다시촬영 버튼 (페이지 3)
     function toggleGaugeCapture() {
       const btn = document.getElementById("captureGaugeButton");
       if(btn.innerText === "촬영하기") {
@@ -396,7 +406,7 @@
       });
     }
   
-    // 편집 모드 전환: 불량 항목의 소화기 위치 클릭 시
+    // 편집 모드 전환: 불량 항목의 소화기 위치(번호) 클릭 시
     function editGaugeImage(docId) {
       editingDocId = docId;
       goToPage(3);
