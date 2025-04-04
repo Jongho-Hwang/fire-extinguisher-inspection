@@ -39,7 +39,7 @@
     }
     table { width: 100%; border-collapse: collapse; }
     th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
-    /* 버튼 행: 뒤로가기 버튼를 왼쪽 배치 */
+    /* 버튼 행: 뒤로가기 버튼 왼쪽에 배치 */
     .button-row {
       display: flex;
       justify-content: flex-end;
@@ -48,7 +48,7 @@
     .button-row .btn.back {
       margin-right: auto;
     }
-    /* 입력 필드 스타일 (페이지2) */
+    /* 소화기 위치 입력란 스타일 */
     #fireExtinguisherNumber {
       width: 100%;
       max-width: 500px;
@@ -161,7 +161,7 @@
   <script>
     // 전역 변수: 편집 모드 사용 시 수정할 문서 ID 저장
     let editingDocId = null;
-  
+    
     // ---------- 페이지 전환 및 공통 함수 ----------
     function goToPage(pageNumber) {
       stopAllVideoStreams();
@@ -185,7 +185,7 @@
         document.getElementById("nextButtonPage3").disabled = true;
       }
     }
-  
+    
     // 현재 사용 중인 카메라 스트림
     let currentStream = null;
     function stopAllVideoStreams() {
@@ -194,7 +194,7 @@
         currentStream = null;
       }
     }
-  
+    
     // ---------- 페이지 1: 점검자 이름 입력 ----------
     function saveInspectorNameAndNext() {
       const name = document.getElementById('inspectorName').value.trim();
@@ -205,12 +205,14 @@
       localStorage.setItem('inspectorName', name);
       goToPage(2);
     }
-  
+    
     // ---------- 페이지 2: 소화기 위치 촬영 ----------
     let locationCaptured = false;
     let locationImageData = "";
     function startLocationCamera() {
       const video = document.getElementById("locationVideo");
+      // 초기 프리뷰 상태에서는 poster 속성을 비워줍니다.
+      video.poster = "";
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
           .then(function(stream) {
@@ -236,10 +238,9 @@
         alert("카메라를 지원하지 않는 브라우저입니다.");
       }
     }
-  
+    
     function toggleLocationCapture() {
       const btn = document.getElementById("captureLocationButton");
-      // 먼저, 입력란에 소화기 위치가 입력되었는지 확인
       const locationInput = document.getElementById("fireExtinguisherNumber").value.trim();
       if(locationInput === "") {
         alert("소화기 위치를 입력해 주세요.");
@@ -249,12 +250,13 @@
         captureLocationImage();
         btn.innerText = "다시촬영";
       } else {
+        // 다시촬영: 카메라 스트림 재시작
         startLocationCamera();
         btn.innerText = "촬영하기";
         document.getElementById("nextButtonPage2").disabled = true;
       }
     }
-  
+    
     function captureLocationImage() {
       const video = document.getElementById("locationVideo");
       const canvas = document.createElement("canvas");
@@ -264,22 +266,23 @@
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       locationImageData = canvas.toDataURL("image/png");
       locationCaptured = true;
-      // 저장: 소화기 위치 입력란의 값을 저장
       const fireExtinguisherNumber = document.getElementById("fireExtinguisherNumber").value.trim();
       localStorage.setItem('fireExtinguisherNumber', fireExtinguisherNumber);
       localStorage.setItem('locationImage', locationImageData);
       stopAllVideoStreams();
-      // 촬영한 이미지를 프리뷰 박스에 그대로 표시
+      // 캡처한 이미지를 video의 poster로 설정하여 프리뷰 유지
       video.srcObject = null;
-      video.src = locationImageData;
+      video.pause();
+      video.poster = locationImageData;
       document.getElementById("nextButtonPage2").disabled = false;
     }
-  
+    
     // ---------- 페이지 3: 압력게이지 촬영 ----------
     let gaugeCaptured = false;
     let gaugeImageData = "";
     function startGaugeCamera() {
       const video = document.getElementById("gaugeVideo");
+      video.poster = "";
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
           .then(function(stream) {
@@ -305,7 +308,7 @@
         alert("카메라를 지원하지 않는 브라우저입니다.");
       }
     }
-  
+    
     function toggleGaugeCapture() {
       const btn = document.getElementById("captureGaugeButton");
       if(btn.innerText === "촬영하기") {
@@ -317,7 +320,7 @@
         document.getElementById("nextButtonPage3").disabled = true;
       }
     }
-  
+    
     function captureGaugeImage() {
       const video = document.getElementById("gaugeVideo");
       const canvas = document.createElement("canvas");
@@ -330,10 +333,11 @@
       localStorage.setItem('gaugeImage', gaugeImageData);
       stopAllVideoStreams();
       video.srcObject = null;
-      video.src = gaugeImageData;
+      video.pause();
+      video.poster = gaugeImageData;
       document.getElementById("nextButtonPage3").disabled = false;
     }
-  
+    
     // ---------- 페이지 4: 점검 결과 선택 및 Firestore 저장 ----------
     function selectResult(result) {
       document.getElementById('resultText').textContent = "점검 결과: " + result;
@@ -341,7 +345,7 @@
       storeInspectionDataToFirebase();
       goToPage(5);
     }
-  
+    
     function storeInspectionDataToFirebase() {
       const data = {
         inspectorName: localStorage.getItem('inspectorName') || '',
@@ -351,7 +355,7 @@
         gaugeImage: localStorage.getItem('gaugeImage') || '',
         timestamp: new Date().toISOString()
       };
-  
+      
       if(editingDocId) {
         window.updateDoc(window.doc(window.db, "inspections", editingDocId), {
           gaugeImage: localStorage.getItem('gaugeImage') || '',
@@ -372,7 +376,7 @@
           });
       }
     }
-  
+    
     // ---------- 페이지 6: 관리자 - 점검 결과 목록 로드 ----------
     function loadAdminResults() {
       const resultsContainer = document.getElementById('resultsContainer');
@@ -405,13 +409,13 @@
         resultsContainer.innerHTML = "<p>오류 발생: " + error + "</p>";
       });
     }
-  
-    // 편집 모드 전환: 불량 항목의 소화기 위치(번호) 클릭 시
+    
+    // 편집 모드 전환: 불량 항목의 소화기 위치 클릭 시
     function editGaugeImage(docId) {
       editingDocId = docId;
       goToPage(3);
     }
-  
+    
     // ---------- 점검 재시작 ----------
     function restartInspection() {
       goToPage(0);
