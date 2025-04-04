@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>소화기 점검 어플 시제품</title>
+  <style>
+    .page { display: none; padding: 20px; }
+    .active { display: block; }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .btn-green { background-color: #4CAF50; color: white; }
+    .btn-red { background-color: #F44336; color: white; }
+    /* 사각형 박스 스타일 (카메라 프리뷰용) */
+    .camera-box {
+      border: 2px solid #ccc;
+      width: 100%;
+      max-width: 500px;
+      height: 300px;
+      margin-bottom: 10px;
+      position: relative;
+      background: #000;
+    }
+    .camera-box video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
+  </style>
+
+  <!-- Firebase 초기화: ES 모듈 방식 (최신 SDK 사용) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-analytics.js";
+    import { getFirestore, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+    
+    // Firebase 콘솔에서 발급받은 구성 정보를 입력하세요.
+    const firebaseConfig = {
+      apiKey: "AIzaSyBOtHtUnIUq-CrdghMEnJusuXk3CSQ6VwE",
+      authDomain: "fire-extinguisher-inspection.firebaseapp.com",
+      projectId: "fire-extinguisher-inspection",
+      storageBucket: "fire-extinguisher-inspection.firebasestorage.app",
+      messagingSenderId: "96312144079",
+      appId: "1:96312144079:web:e27e0b93b217872f7307ba",
+      measurementId: "G-04NW81RZGN"
+    };
+    
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+    
+    // 전역(window) 객체에 할당하여 나머지 스크립트에서 사용
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.query = query;
+    window.orderBy = orderBy;
+    window.getDocs = getDocs;
+  </script>
+</head>
+<body>
+  <!-- 페이지 1: 점검자 이름 입력 -->
+  <div id="page1" class="page active">
+    <h2>점검자 이름을 입력하세요</h2>
+    <input type="text" id="inspectorName" placeholder="이름 입력" />
+    <br><br>
+    <button class="btn" onclick="saveInspectorNameAndNext()">다음</button>
+  </div>
+
+  <!-- 페이지 2: 소화기 번호 입력 및 소화기 위치 촬영 -->
+  <div id="page2" class="page">
+    <h2>소화기 번호를 작성해주세요</h2>
+    <input type="text" id="fireExtinguisherNumber" placeholder="소화기 번호 입력" />
+    <br><br>
+    <h3>소화기 위치를 촬영해주세요</h3>
+    <!-- 카메라 프리뷰 박스 -->
+    <div class="camera-box">
+      <video id="locationVideo" autoplay playsinline></video>
+    </div>
+    <!-- 촬영 버튼 -->
+    <button class="btn" id="captureLocationButton" onclick="captureLocationImage()">촬영하기</button>
+    <br>
+    <!-- 촬영 후 활성화되는 다음 버튼 -->
+    <button class="btn" id="nextButtonPage2" onclick="goToPage(3)" disabled>다음</button>
+  </div>
+
+  <!-- 페이지 3: 소화기의 압력게이지 촬영 -->
+  <div id="page3" class="page">
+    <h2>소화기의 압력게이지를 촬영해주세요</h2>
+    <!-- 카메라 프리뷰 박스 -->
+    <div class="camera-box">
+      <video id="gaugeVideo" autoplay playsinline></video>
+    </div>
+    <!-- 촬영 버튼 -->
+    <button class="btn" id="captureGaugeButton" onclick="captureGaugeImage()">촬영하기</button>
+    <br>
+    <!-- 촬영 후 활성화되는 다음 버튼 -->
+    <button class="btn" id="nextButtonPage3" onclick="goToPage(4)" disabled>다음</button>
+  </div>
+
+  <!-- 페이지 4: 점검 결과 선택 -->
+  <div id="page4" class="page">
+    <h2>점검 결과를 선택하세요</h2>
+    <button class="btn btn-green" onclick="selectResult('양호')">양호</button>
+    <button class="btn btn-red" onclick="selectResult('불량')">불량</button>
+  </div>
+
+  <!-- 페이지 5: 점검 완료 후 확인 페이지 -->
+  <div id="page5" class="page">
+    <h2>점검이 완료되었습니다</h2>
+    <p id="resultText"></p>
+    <p>저장된 점검자 이름: <span id="savedName"></span></p>
+    <p>저장된 소화기 번호: <span id="savedNumber"></span></p>
+    <p>저장된 점검 결과: <span id="savedResult"></span></p>
+    <button class="btn" onclick="restartInspection()">다른 소화기 점검하기</button>
+    <button class="btn" onclick="goToPage(6); loadAdminResults();">관리자 결과 확인</button>
+  </div>
+
+  <!-- 페이지 6: 관리자 - 점검 결과 목록 확인 -->
+  <div id="page6" class="page">
+    <h2>관리자 - 점검 결과 목록</h2>
+    <button class="btn" onclick="goToPage(5)">뒤로가기</button>
+    <div id="resultsContainer"></div>
+  </div>
+
+  <script>
+    // ---------- 페이지 전환 및 공통 함수 ----------
+    function goToPage(pageNumber) {
+      stopAllVideoStreams();
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById('page' + pageNumber).classList.add('active');
+
+      if (pageNumber === 5) {
+        document.getElementById('savedName').textContent = localStorage.getItem('inspectorName') || '';
+        document.getElementById('savedNumber').textContent = localStorage.getItem('fireExtinguisherNumber') || '';
+        document.getElementById('savedResult').textContent = localStorage.getItem('inspectionResult') || '';
+      }
+
+      if (pageNumber === 2) {
+        startLocationCamera();
+      }
+      if (pageNumber === 3) {
+        startGaugeCamera();
+      }
+    }
+
+    // 현재 사용 중인 카메라 스트림
+    let currentStream = null;
+    function stopAllVideoStreams() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+      }
+    }
+
+    // ---------- 페이지 1: 점검자 이름 입력 ----------
+    function saveInspectorNameAndNext() {
+      const name = document.getElementById('inspectorName').value;
+      localStorage.setItem('inspectorName', name);
+      goToPage(2);
+    }
+
+    // ---------- 페이지 2: 소화기 위치 촬영 ----------
+    let locationCaptured = false;
+    let locationImageData = "";
+    function startLocationCamera() {
+      const video = document.getElementById("locationVideo");
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+          .then(function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+          })
+          .catch(function(err) {
+            console.error("카메라 접근 실패: " + err);
+            alert("카메라 접근에 실패했습니다.");
+          });
+      } else if (navigator.webkitGetUserMedia) {
+        navigator.webkitGetUserMedia({ video: { facingMode: "environment" } },
+          function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+          },
+          function(err) {
+            console.error("카메라 접근 실패: " + err);
+            alert("카메라 접근에 실패했습니다.");
+          }
+        );
+      } else {
+        alert("카메라를 지원하지 않는 브라우저입니다.");
+      }
+    }
+
+    function captureLocationImage() {
+      const video = document.getElementById("locationVideo");
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      locationImageData = canvas.toDataURL("image/png");
+      locationCaptured = true;
+      // 소화기 번호 입력란의 값을 저장
+      const fireExtinguisherNumber = document.getElementById("fireExtinguisherNumber").value;
+      localStorage.setItem('fireExtinguisherNumber', fireExtinguisherNumber);
+      localStorage.setItem('locationImage', locationImageData);
+      stopAllVideoStreams();
+      document.getElementById("nextButtonPage2").disabled = false;
+    }
+
+    // ---------- 페이지 3: 압력게이지 촬영 ----------
+    let gaugeCaptured = false;
+    let gaugeImageData = "";
+    function startGaugeCamera() {
+      const video = document.getElementById("gaugeVideo");
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+          .then(function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+          })
+          .catch(function(err) {
+            console.error("카메라 접근 실패: " + err);
+            alert("카메라 접근에 실패했습니다.");
+          });
+      } else if (navigator.webkitGetUserMedia) {
+        navigator.webkitGetUserMedia({ video: { facingMode: "environment" } },
+          function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+          },
+          function(err) {
+            console.error("카메라 접근 실패: " + err);
+            alert("카메라 접근에 실패했습니다.");
+          }
+        );
+      } else {
+        alert("카메라를 지원하지 않는 브라우저입니다.");
+      }
+    }
+
+    function captureGaugeImage() {
+      const video = document.getElementById("gaugeVideo");
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      gaugeImageData = canvas.toDataURL("image/png");
+      gaugeCaptured = true;
+      localStorage.setItem('gaugeImage', gaugeImageData);
+      stopAllVideoStreams();
+      document.getElementById("nextButtonPage3").disabled = false;
+    }
+
+    // ---------- 페이지 4: 점검 결과 선택 및 Firestore 저장 ----------
+    function selectResult(result) {
+      document.getElementById('resultText').textContent = "점검 결과: " + result;
+      localStorage.setItem('inspectionResult', result);
+      storeInspectionDataToFirebase();
+      goToPage(5);
+    }
+
+    function storeInspectionDataToFirebase() {
+      const data = {
+        inspectorName: localStorage.getItem('inspectorName') || '',
+        fireExtinguisherNumber: localStorage.getItem('fireExtinguisherNumber') || '',
+        inspectionResult: localStorage.getItem('inspectionResult') || '',
+        locationImage: localStorage.getItem('locationImage') || '',
+        gaugeImage: localStorage.getItem('gaugeImage') || '',
+        timestamp: new Date().toISOString()
+      };
+
+      addDoc(collection(window.db, "inspections"), data)
+        .then((docRef) => {
+          console.log("Document written with ID: ", docRef.id);
+        })
+        .catch((error) => {
+          console.error("Error adding document: ", error);
+        });
+    }
+
+    // ---------- 페이지 6: 관리자 - 점검 결과 목록 로드 ----------
+    function loadAdminResults() {
+      const resultsContainer = document.getElementById('resultsContainer');
+      resultsContainer.innerHTML = "<p>로딩중...</p>";
+      const q = query(collection(window.db, "inspections"), orderBy("timestamp", "desc"));
+      getDocs(q).then((querySnapshot) => {
+        if(querySnapshot.empty){
+          resultsContainer.innerHTML = "<p>저장된 결과가 없습니다.</p>";
+          return;
+        }
+        let html = "<table><tr><th>시간</th><th>점검자 이름</th><th>소화기 번호</th><th>점검 결과</th><th>위치 이미지</th><th>압력게이지 이미지</th></tr>";
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          html += "<tr>";
+          html += "<td>" + data.timestamp + "</td>";
+          html += "<td>" + data.inspectorName + "</td>";
+          html += "<td>" + data.fireExtinguisherNumber + "</td>";
+          html += "<td>" + data.inspectionResult + "</td>";
+          html += "<td>" + (data.locationImage ? "<img src='" + data.locationImage + "' width='100'>" : "없음") + "</td>";
+          html += "<td>" + (data.gaugeImage ? "<img src='" + data.gaugeImage + "' width='100'>" : "없음") + "</td>";
+          html += "</tr>";
+        });
+        html += "</table>";
+        resultsContainer.innerHTML = html;
+      }).catch((error) => {
+        resultsContainer.innerHTML = "<p>오류 발생: " + error + "</p>";
+      });
+    }
+
+    // ---------- 점검 재시작 ----------
+    function restartInspection() {
+      goToPage(1);
+      // 필요 시 localStorage 초기화 (예: localStorage.clear();)
+      locationCaptured = false;
+      gaugeCaptured = false;
+      document.getElementById("nextButtonPage2").disabled = true;
+      document.getElementById("nextButtonPage3").disabled = true;
+    }
+  </script>
+</body>
+</html>
