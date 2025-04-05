@@ -61,13 +61,13 @@
       padding: 8px;
     }
     
-    /* 페이지 0: 시작 페이지 (중앙정렬) */
+    /* 페이지 0: 시작 페이지 */
     #page0 { text-align: center; }
-    #page0 img { max-width: 80%; margin-top: 20px; }
+    #page0 img { max-width: 80%; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
     
-    /* 페이지 1: 컨텐츠를 좌측 상단 정렬 */
+    /* 페이지 1: 컨텐츠 좌측 상단 정렬 */
     #page1 .container {
-      margin: 20px 0 0 0;  /* 상단 여백을 조금 주고 좌측 정렬 */
+      margin: 20px 0 0 0;
       width: 90%;
       max-width: 500px;
       text-align: left;
@@ -96,7 +96,6 @@
       box-sizing: border-box;
       display: none;
     }
-    /* 각 항목의 폭은 자동 */
     #persistentBar span { }
   </style>
   
@@ -141,8 +140,8 @@
   <!-- 페이지 0: 시작 페이지 -->
   <div id="page0" class="page active">
     <h1>소화기 안전점검</h1>
-    <!-- 메인 백그라운드 이미지로 삽입 (아래 URL 사용) -->
-    <img src="https://via.placeholder.com/300x200" alt="메인 이미지">
+    <!-- 메인 이미지로 카카오 CDN 이미지 URL 사용 -->
+    <img src="https://blog.kakaocdn.net/dn/ASM7r/btrTqfjWnwd/Q0KnCEPKo4mcLtahkza0q0/img.png" alt="메인 이미지">
     <br>
     <button class="btn btn-green" onclick="goToPage(1)">점검 시작하기</button>
   </div>
