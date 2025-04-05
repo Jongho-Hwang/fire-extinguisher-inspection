@@ -72,15 +72,14 @@
       max-width: 500px;
       text-align: left;
     }
-    /* 입력 행: 이름 입력과 버튼을 같은 줄에 배치 */
+    /* 이름과 소속 입력 행: flex로 한 줄에 배치 */
     .input-row {
       display: flex;
       align-items: center;
       gap: 10px;
+      margin-bottom: 10px;
     }
-    /* "다음" 버튼을 가운데 정렬하기 위해 전체 컨테이너에 적용된 여백은 그대로 사용 */
-    
-    /* 고정 persistent bar (페이지 2~4) */
+    /* 하단 고정 persistent bar: 가운데 소속 표시 */
     #persistentBar {
       position: fixed;
       bottom: 0;
@@ -89,15 +88,13 @@
       height: 30px;
       background: #005b90;
       color: #fff;
-      font-size: 25px;
+      font-size: 20px;
       line-height: 30px;
       padding: 0 5px;
       box-sizing: border-box;
       display: none;
+      text-align: center;
     }
-    #persistentBar span { display: inline-block; }
-    #barInspectorName { float: left; }
-    #barFireExtinguisherNumber { float: right; }
   </style>
   
   <!-- Firebase 초기화: ES 모듈 방식 -->
@@ -131,10 +128,9 @@
   </script>
 </head>
 <body>
-  <!-- Persistent bottom bar (페이지 2~4에 표시) -->
+  <!-- 하단 고정 persistent bar: 가운데에 소속 표시 -->
   <div id="persistentBar">
-    <span id="barInspectorName"></span>
-    <span id="barFireExtinguisherNumber"></span>
+    <span id="barDept"></span>
   </div>
   
   <!-- 페이지 0: 시작 페이지 -->
@@ -146,14 +142,18 @@
     <button class="btn btn-green" onclick="goToPage(1)">점검 시작하기</button>
   </div>
   
-  <!-- 페이지 1: 점검자 이름 입력 -->
+  <!-- 페이지 1: 점검자 이름 및 소속 입력 -->
   <div id="page1" class="page">
     <div class="container">
       <h2>점검자의 이름을 입력하세요</h2>
       <div class="input-row">
         <input type="text" id="inspectorName" placeholder="이름 입력" />
-        <button class="btn" onclick="saveInspectorNameAndNext()">다음</button>
       </div>
+      <h2>소속을 입력하세요</h2>
+      <div class="input-row">
+        <input type="text" id="inspectorDept" placeholder="소속 입력" />
+      </div>
+      <button class="btn" onclick="saveInspectorInfoAndNext()">다음</button>
     </div>
   </div>
   
@@ -225,11 +225,11 @@
       document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
       document.getElementById('page' + pageNumber).classList.add('active');
   
-      // persistent bar: 페이지 2~4에 표시
+      // persistent bar: 페이지 2~4에 표시 (소속을 가운데에 표시)
       if(pageNumber >= 2 && pageNumber <= 4) {
         document.getElementById("persistentBar").style.display = "block";
-        document.getElementById("barInspectorName").innerText = localStorage.getItem('inspectorName') || "";
-        document.getElementById("barFireExtinguisherNumber").innerText = localStorage.getItem('fireExtinguisherNumber') || "";
+        // 소속 정보를 가져와 가운데에 표시 (없으면 빈칸)
+        document.getElementById("barDept").innerText = localStorage.getItem('inspectorDept') || "";
       } else {
         document.getElementById("persistentBar").style.display = "none";
       }
@@ -261,14 +261,17 @@
       }
     }
     
-    // ---------- 페이지 1: 점검자 이름 입력 ----------
-    function saveInspectorNameAndNext() {
+    // ---------- 페이지 1: 점검자 이름 및 소속 입력 ----------
+    function saveInspectorInfoAndNext() {
       const name = document.getElementById('inspectorName').value.trim();
+      const dept = document.getElementById('inspectorDept').value.trim();
       if(name === "") {
         alert("이름을 입력해 주세요.");
         return;
       }
+      // 소속은 선택사항이므로 빈칸이면 그대로 저장
       localStorage.setItem('inspectorName', name);
+      localStorage.setItem('inspectorDept', dept);
       goToPage(2);
     }
     
