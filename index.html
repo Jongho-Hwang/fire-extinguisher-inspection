@@ -141,7 +141,7 @@
   <div id="page0" class="page active">
     <h1>소화기 안전점검</h1>
     <!-- 메인 이미지로 카카오 CDN 이미지 URL 사용 -->
-    <img src="https://i.imgur.com/1yMnhYv.png" alt="메인 이미지">
+    <img src="https://blog.kakaocdn.net/dn/ASM7r/btrTqfjWnwd/Q0KnCEPKo4mcLtahkza0q0/img.png" alt="메인 이미지">
     <br>
     <button class="btn btn-green" onclick="goToPage(1)">점검 시작하기</button>
   </div>
@@ -208,7 +208,7 @@
     <p>저장된 점검자 이름: <span id="savedName"></span></p>
     <p>저장된 소화기 위치: <span id="savedNumber"></span></p>
     <p>저장된 점검 결과: <span id="savedResult"></span></p>
-    <!-- "다른 소화기 점검하기" 버튼을 누르면 점검자 이름, 소속은 유지한 채 소화기 위치 관련 항목 초기화 후 페이지2로 이동 -->
+    <!-- "다른 소화기 점검하기" 버튼은 점검자 이름과 소속은 유지, 소화기 위치 및 촬영 데이터 초기화 후 페이지 2로 이동 -->
     <button class="btn" onclick="restartInspection()">다른 소화기 점검하기</button>
     <button class="btn" onclick="goToPage(6); loadAdminResults();">관리자 결과 확인</button>
   </div>
@@ -468,7 +468,7 @@
           resultsContainer.innerHTML = "<p>저장된 결과가 없습니다.</p>";
           return;
         }
-        let html = "<table><tr><th>시간</th><th>점검자 이름</th><th>소화기 위치</th><th>점검 결과</th><th>위치 이미지</th><th>압력게이지 이미지</th></tr>";
+        let html = "<table><tr><th>시간</th><th>점검자 이름</th><th>소속</th><th>소화기 위치</th><th>점검 결과</th><th>위치 이미지</th><th>압력게이지 이미지</th></tr>";
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           let fireNumCell = data.fireExtinguisherNumber;
@@ -478,6 +478,7 @@
           html += "<tr>";
           html += "<td>" + data.timestamp + "</td>";
           html += "<td>" + data.inspectorName + "</td>";
+          html += "<td>" + (data.inspectorDept || "없음") + "</td>";
           html += "<td>" + fireNumCell + "</td>";
           html += "<td>" + data.inspectionResult + "</td>";
           html += "<td>" + (data.locationImage ? "<img src='" + data.locationImage + "' width='100'>" : "없음") + "</td>";
@@ -499,7 +500,7 @@
     
     // ---------- 점검 재시작 ----------
     function restartInspection() {
-      // 점검자 이름과 소속은 그대로 유지, 소화기 위치 및 촬영 관련 데이터 초기화
+      // 점검자 이름과 소속은 유지, 소화기 위치 및 촬영 관련 데이터 초기화
       localStorage.removeItem('fireExtinguisherNumber');
       localStorage.removeItem('locationImage');
       localStorage.removeItem('gaugeImage');
