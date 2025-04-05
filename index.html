@@ -438,4 +438,49 @@
     function loadAdminResults() {
       const resultsContainer = document.getElementById('resultsContainer');
       resultsContainer.innerHTML = "<p>로딩중...</p>";
-      const q = window.query(window
+      const q = window.query(window.collection(window.db, "inspections"), window.orderBy("timestamp", "desc"));
+      window.getDocs(q).then((querySnapshot) => {
+        if(querySnapshot.empty){
+          resultsContainer.innerHTML = "<p>저장된 결과가 없습니다.</p>";
+          return;
+        }
+        let html = "<table><tr><th>시간</th><th>점검자 이름</th><th>소화기 위치</th><th>점검 결과</th><th>위치 이미지</th><th>압력게이지 이미지</th></tr>";
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          let fireNumCell = data.fireExtinguisherNumber;
+          if(data.inspectionResult === "불량") {
+            fireNumCell = "<a href='#' onclick=\"editGaugeImage('" + doc.id + "')\">" + data.fireExtinguisherNumber + "</a>";
+          }
+          html += "<tr>";
+          html += "<td>" + data.timestamp + "</td>";
+          html += "<td>" + data.inspectorName + "</td>";
+          html += "<td>" + fireNumCell + "</td>";
+          html += "<td>" + data.inspectionResult + "</td>";
+          html += "<td>" + (data.locationImage ? "<img src='" + data.locationImage + "' width='100'>" : "없음") + "</td>";
+          html += "<td>" + (data.gaugeImage ? "<img src='" + data.gaugeImage + "' width='100'>" : "없음") + "</td>";
+          html += "</tr>";
+        });
+        html += "</table>";
+        resultsContainer.innerHTML = html;
+      }).catch((error) => {
+        resultsContainer.innerHTML = "<p>오류 발생: " + error + "</p>";
+      });
+    }
+    
+    // 편집 모드 전환: 불량 항목의 소화기 위치 클릭 시
+    function editGaugeImage(docId) {
+      editingDocId = docId;
+      goToPage(3);
+    }
+    
+    // ---------- 점검 재시작 ----------
+    function restartInspection() {
+      goToPage(0);
+      locationCaptured = false;
+      gaugeCaptured = false;
+      document.getElementById("nextButtonPage2").disabled = true;
+      document.getElementById("nextButtonPage3").disabled = true;
+    }
+  </script>
+</body>
+</html>
