@@ -141,7 +141,7 @@
   <div id="page0" class="page active">
     <h1>소화기 안전점검</h1>
     <!-- 메인 이미지로 카카오 CDN 이미지 URL 사용 -->
-    <img src="https://i.imgur.com/1yMnhYv.png" alt="메인 이미지">
+    <img src="https://blog.kakaocdn.net/dn/ASM7r/btrTqfjWnwd/Q0KnCEPKo4mcLtahkza0q0/img.png" alt="메인 이미지">
     <br>
     <button class="btn btn-green" onclick="goToPage(1)">점검 시작하기</button>
   </div>
@@ -150,12 +150,12 @@
   <div id="page1" class="page">
     <div class="container">
       <div class="input-row">
-        <label for="inspectorName">점검자 이름:</label>
-        <input type="text" id="inspectorName" placeholder="이름 입력" />
+        <label for="inspectorNameInput">점검자 이름:</label>
+        <input type="text" id="inspectorNameInput" placeholder="이름 입력" />
       </div>
       <div class="input-row">
-        <label for="inspectorDept">소속:</label>
-        <input type="text" id="inspectorDept" placeholder="소속 입력" />
+        <label for="inspectorDeptInput">소속:</label>
+        <input type="text" id="inspectorDeptInput" placeholder="소속 입력" />
       </div>
       <button class="btn" onclick="saveInspectorInfoAndNext()">다음</button>
     </div>
@@ -207,4 +207,307 @@
     <p id="resultText"></p>
     <p>저장된 점검자 이름: <span id="savedName"></span></p>
     <p>저장된 소화기 위치: <span id="savedNumber"></span></p>
-    <p>저장된 점
+    <p>저장된 점검 결과: <span id="savedResult"></span></p>
+    <!-- "다른 소화기 점검하기" 버튼을 누르면 점검자 이름, 소속은 유지한 채 소화기 위치 관련 항목 초기화 후 페이지2로 이동 -->
+    <button class="btn" onclick="restartInspection()">다른 소화기 점검하기</button>
+    <button class="btn" onclick="goToPage(6); loadAdminResults();">관리자 결과 확인</button>
+  </div>
+  
+  <!-- 페이지 6: 관리자 - 점검 결과 목록 확인 -->
+  <div id="page6" class="page">
+    <h2>관리자 - 점검 결과 목록</h2>
+    <button class="btn" onclick="goToPage(5)">뒤로가기</button>
+    <div id="resultsContainer"></div>
+  </div>
+  
+  <script>
+    // 전역 변수: 편집 모드 사용 시 수정할 문서 ID 저장
+    let editingDocId = null;
+    
+    // ---------- 페이지 전환 및 공통 함수 ----------
+    function goToPage(pageNumber) {
+      stopAllVideoStreams();
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById('page' + pageNumber).classList.add('active');
+  
+      // persistent bar: 페이지 2~4에 표시, 세 항목 연동
+      if(pageNumber >= 2 && pageNumber <= 4) {
+        document.getElementById("persistentBar").style.display = "flex";
+        document.getElementById("barInspectorName").innerText = localStorage.getItem('inspectorName') || "";
+        document.getElementById("barDept").innerText = localStorage.getItem('inspectorDept') || "";
+        document.getElementById("barFireExtinguisherNumber").innerText = localStorage.getItem('fireExtinguisherNumber') || "";
+      } else {
+        document.getElementById("persistentBar").style.display = "none";
+      }
+  
+      if (pageNumber === 5) {
+        document.getElementById('savedName').textContent = localStorage.getItem('inspectorName') || '';
+        document.getElementById('savedNumber').textContent = localStorage.getItem('fireExtinguisherNumber') || '';
+        document.getElementById('savedResult').textContent = localStorage.getItem('inspectionResult') || '';
+      }
+  
+      if (pageNumber === 2) {
+        startLocationCamera();
+        document.getElementById("captureLocationButton").innerText = "촬영하기";
+        document.getElementById("nextButtonPage2").disabled = true;
+      }
+      if (pageNumber === 3) {
+        startGaugeCamera();
+        document.getElementById("captureGaugeButton").innerText = "촬영하기";
+        document.getElementById("nextButtonPage3").disabled = true;
+      }
+    }
+    
+    // 현재 사용 중인 카메라 스트림
+    let currentStream = null;
+    function stopAllVideoStreams() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+      }
+    }
+    
+    // ---------- 페이지 1: 점검자 이름 및 소속 입력 ----------
+    function saveInspectorInfoAndNext() {
+      const name = document.getElementById('inspectorNameInput').value.trim();
+      const dept = document.getElementById('inspectorDeptInput').value.trim();
+      if(name === "") {
+        alert("이름을 입력해 주세요.");
+        return;
+      }
+      localStorage.setItem('inspectorName', name);
+      localStorage.setItem('inspectorDept', dept);
+      goToPage(2);
+    }
+    
+    // ---------- 페이지 2: 소화기 위치 촬영 ----------
+    let locationCaptured = false;
+    let locationImageData = "";
+    function startLocationCamera() {
+      const video = document.getElementById("locationVideo");
+      const img = document.getElementById("locationImg");
+      img.style.display = "none";
+      video.style.display = "block";
+      video.poster = "";
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+          .then(function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+          })
+          .catch(function(err) {
+            console.error("카메라 접근 실패: " + err);
+            alert("카메라 접근에 실패했습니다.");
+          });
+      } else if (navigator.webkitGetUserMedia) {
+        navigator.webkitGetUserMedia({ video: { facingMode: "environment" } },
+          function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+          },
+          function(err) {
+            console.error("카메라 접근 실패: " + err);
+            alert("카메라 접근에 실패했습니다.");
+          }
+        );
+      } else {
+        alert("카메라를 지원하지 않는 브라우저입니다.");
+      }
+    }
+    
+    function toggleLocationCapture() {
+      const btn = document.getElementById("captureLocationButton");
+      const locationInput = document.getElementById("fireExtinguisherNumber").value.trim();
+      if(locationInput === "") {
+        alert("소화기 위치를 입력해 주세요.");
+        return;
+      }
+      if(btn.innerText === "촬영하기") {
+        captureLocationImage();
+        btn.innerText = "다시 촬영";
+      } else {
+        startLocationCamera();
+        btn.innerText = "촬영하기";
+        document.getElementById("nextButtonPage2").disabled = true;
+      }
+    }
+    
+    function captureLocationImage() {
+      const video = document.getElementById("locationVideo");
+      const img = document.getElementById("locationImg");
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      locationImageData = canvas.toDataURL("image/png");
+      locationCaptured = true;
+      const fireExtinguisherNumber = document.getElementById("fireExtinguisherNumber").value.trim();
+      localStorage.setItem('fireExtinguisherNumber', fireExtinguisherNumber);
+      localStorage.setItem('locationImage', locationImageData);
+      stopAllVideoStreams();
+      // video 숨기고 img에 캡처한 이미지 표시
+      video.style.display = "none";
+      img.src = locationImageData;
+      img.style.display = "block";
+      document.getElementById("nextButtonPage2").disabled = false;
+    }
+    
+    // ---------- 페이지 3: 압력게이지 촬영 ----------
+    let gaugeCaptured = false;
+    let gaugeImageData = "";
+    function startGaugeCamera() {
+      const video = document.getElementById("gaugeVideo");
+      const img = document.getElementById("gaugeImg");
+      img.style.display = "none";
+      video.style.display = "block";
+      video.poster = "";
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+          .then(function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+          })
+          .catch(function(err) {
+            console.error("카메라 접근 실패: " + err);
+            alert("카메라 접근에 실패했습니다.");
+          });
+      } else if (navigator.webkitGetUserMedia) {
+        navigator.webkitGetUserMedia({ video: { facingMode: "environment" } },
+          function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+          },
+          function(err) {
+            console.error("카메라 접근 실패: " + err);
+            alert("카메라 접근에 실패했습니다.");
+          }
+        );
+      } else {
+        alert("카메라를 지원하지 않는 브라우저입니다.");
+      }
+    }
+    
+    function toggleGaugeCapture() {
+      const btn = document.getElementById("captureGaugeButton");
+      if(btn.innerText === "촬영하기") {
+        captureGaugeImage();
+        btn.innerText = "다시 촬영";
+      } else {
+        startGaugeCamera();
+        btn.innerText = "촬영하기";
+        document.getElementById("nextButtonPage3").disabled = true;
+      }
+    }
+    
+    function captureGaugeImage() {
+      const video = document.getElementById("gaugeVideo");
+      const img = document.getElementById("gaugeImg");
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      gaugeImageData = canvas.toDataURL("image/png");
+      gaugeCaptured = true;
+      localStorage.setItem('gaugeImage', gaugeImageData);
+      stopAllVideoStreams();
+      video.style.display = "none";
+      img.src = gaugeImageData;
+      img.style.display = "block";
+      document.getElementById("nextButtonPage3").disabled = false;
+    }
+    
+    // ---------- 페이지 4: 점검 결과 선택 및 Firestore 저장 ----------
+    function selectResult(result) {
+      document.getElementById('resultText').textContent = "점검 결과: " + result;
+      localStorage.setItem('inspectionResult', result);
+      storeInspectionDataToFirebase();
+      goToPage(5);
+    }
+    
+    function storeInspectionDataToFirebase() {
+      const data = {
+        inspectorName: localStorage.getItem('inspectorName') || '',
+        inspectorDept: localStorage.getItem('inspectorDept') || '',
+        fireExtinguisherNumber: localStorage.getItem('fireExtinguisherNumber') || '',
+        inspectionResult: localStorage.getItem('inspectionResult') || '',
+        locationImage: localStorage.getItem('locationImage') || '',
+        gaugeImage: localStorage.getItem('gaugeImage') || '',
+        timestamp: new Date().toISOString()
+      };
+      
+      if(editingDocId) {
+        window.updateDoc(window.doc(window.db, "inspections", editingDocId), {
+          gaugeImage: localStorage.getItem('gaugeImage') || '',
+          timestamp: new Date().toISOString()
+        }).then(() => {
+          console.log("문서 업데이트 완료, ID: ", editingDocId);
+          editingDocId = null;
+        }).catch((error) => {
+          console.error("문서 업데이트 오류: ", error);
+        });
+      } else {
+        window.addDoc(window.collection(window.db, "inspections"), data)
+          .then((docRef) => {
+            console.log("문서 추가 완료, ID: ", docRef.id);
+          })
+          .catch((error) => {
+            console.error("문서 추가 오류: ", error);
+          });
+      }
+    }
+    
+    // ---------- 페이지 6: 관리자 - 점검 결과 목록 로드 ----------
+    function loadAdminResults() {
+      const resultsContainer = document.getElementById('resultsContainer');
+      resultsContainer.innerHTML = "<p>로딩중...</p>";
+      const q = window.query(window.collection(window.db, "inspections"), window.orderBy("timestamp", "desc"));
+      window.getDocs(q).then((querySnapshot) => {
+        if(querySnapshot.empty){
+          resultsContainer.innerHTML = "<p>저장된 결과가 없습니다.</p>";
+          return;
+        }
+        let html = "<table><tr><th>시간</th><th>점검자 이름</th><th>소화기 위치</th><th>점검 결과</th><th>위치 이미지</th><th>압력게이지 이미지</th></tr>";
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          let fireNumCell = data.fireExtinguisherNumber;
+          if(data.inspectionResult === "불량") {
+            fireNumCell = "<a href='#' onclick=\"editGaugeImage('" + doc.id + "')\">" + data.fireExtinguisherNumber + "</a>";
+          }
+          html += "<tr>";
+          html += "<td>" + data.timestamp + "</td>";
+          html += "<td>" + data.inspectorName + "</td>";
+          html += "<td>" + fireNumCell + "</td>";
+          html += "<td>" + data.inspectionResult + "</td>";
+          html += "<td>" + (data.locationImage ? "<img src='" + data.locationImage + "' width='100'>" : "없음") + "</td>";
+          html += "<td>" + (data.gaugeImage ? "<img src='" + data.gaugeImage + "' width='100'>" : "없음") + "</td>";
+          html += "</tr>";
+        });
+        html += "</table>";
+        resultsContainer.innerHTML = html;
+      }).catch((error) => {
+        resultsContainer.innerHTML = "<p>오류 발생: " + error + "</p>";
+      });
+    }
+    
+    // 편집 모드 전환: 불량 항목의 소화기 위치 클릭 시
+    function editGaugeImage(docId) {
+      editingDocId = docId;
+      goToPage(3);
+    }
+    
+    // ---------- 점검 재시작 ----------
+    function restartInspection() {
+      // 점검자 이름과 소속은 그대로 유지, 소화기 위치 및 촬영 관련 데이터 초기화
+      localStorage.removeItem('fireExtinguisherNumber');
+      localStorage.removeItem('locationImage');
+      localStorage.removeItem('gaugeImage');
+      document.getElementById("fireExtinguisherNumber").value = "";
+      goToPage(2);
+      document.getElementById("nextButtonPage2").disabled = true;
+      document.getElementById("nextButtonPage3").disabled = true;
+    }
+  </script>
+</body>
+</html>
