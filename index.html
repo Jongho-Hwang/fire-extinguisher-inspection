@@ -19,6 +19,7 @@
     }
     .btn-green { background-color: #4CAF50; color: white; }
     .btn-red { background-color: #F44336; color: white; }
+    
     /* 카메라 프리뷰 박스: video와 img 모두 사용 */
     .camera-box {
       border: 2px solid #ccc;
@@ -38,8 +39,10 @@
       height: 100%;
       object-fit: cover;
     }
+    
     table { width: 100%; border-collapse: collapse; }
     th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
+    
     /* 버튼 행: 뒤로가기 버튼 왼쪽 배치 */
     .button-row {
       display: flex;
@@ -49,6 +52,7 @@
     .button-row .btn.back {
       margin-right: auto;
     }
+    
     /* 소화기 위치 입력란 (페이지 2) */
     #fireExtinguisherNumber {
       width: 100%;
@@ -56,9 +60,11 @@
       font-size: 18px;
       padding: 8px;
     }
+    
     /* 페이지 0 스타일: 제목, 이미지, 버튼 중앙정렬 */
     #page0 { text-align: center; }
     #page0 img { max-width: 80%; margin-top: 20px; }
+    
     /* 페이지 1 스타일: 컨테이너 가운데 배치, 상단 1/3 높이에서 좌측 정렬 */
     #page1 .container {
       margin: 33vh auto 0 auto;
@@ -66,17 +72,25 @@
       max-width: 500px;
       text-align: left;
     }
-    #page1 button { display: block; margin: 20px auto 0 auto; }
+    /* 입력 행: 이름 입력과 버튼을 같은 줄에 배치 */
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    /* "다음" 버튼을 가운데 정렬하기 위해 전체 컨테이너에 적용된 여백은 그대로 사용 */
+    
     /* 고정 persistent bar (페이지 2~4) */
     #persistentBar {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
-      height: 15px;
-      background: #eee;
-      font-size: 13px;
-      line-height: 15px;
+      height: 30px;
+      background: #005b90;
+      color: #fff;
+      font-size: 25px;
+      line-height: 30px;
       padding: 0 5px;
       box-sizing: border-box;
       display: none;
@@ -136,9 +150,10 @@
   <div id="page1" class="page">
     <div class="container">
       <h2>점검자의 이름을 입력하세요</h2>
-      <input type="text" id="inspectorName" placeholder="이름 입력" />
-      <br>
-      <button class="btn" onclick="saveInspectorNameAndNext()">다음</button>
+      <div class="input-row">
+        <input type="text" id="inspectorName" placeholder="이름 입력" />
+        <button class="btn" onclick="saveInspectorNameAndNext()">다음</button>
+      </div>
     </div>
   </div>
   
@@ -323,7 +338,7 @@
       localStorage.setItem('fireExtinguisherNumber', fireExtinguisherNumber);
       localStorage.setItem('locationImage', locationImageData);
       stopAllVideoStreams();
-      // video 숨기고 img에 캡처본 표시
+      // video 숨기고 img에 캡처한 이미지를 표시
       video.style.display = "none";
       img.src = locationImageData;
       img.style.display = "block";
