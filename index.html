@@ -61,26 +61,25 @@
       padding: 8px;
     }
     
-    /* 페이지 0 스타일: 제목, 이미지, 버튼 중앙정렬 */
+    /* 페이지 0: 시작 페이지 (중앙정렬) */
     #page0 { text-align: center; }
     #page0 img { max-width: 80%; margin-top: 20px; }
     
-    /* 페이지 1 스타일: 컨테이너 우측 상단 배치 */
+    /* 페이지 1: 컨텐츠를 좌측 상단 정렬 */
     #page1 .container {
-      margin: 5vh auto 0 auto;
+      margin: 20px 0 0 0;  /* 상단 여백을 조금 주고 좌측 정렬 */
       width: 90%;
       max-width: 500px;
-      text-align: right;
+      text-align: left;
     }
     .input-row {
       display: flex;
       align-items: center;
       gap: 10px;
       margin-bottom: 10px;
-      justify-content: flex-end;
     }
     
-    /* 하단 persistent bar: 세 항목 표시 (점검자 이름, 소속, 소화기 위치) */
+    /* 하단 persistent bar: Flexbox로 좌측, 가운데, 우측 정렬 */
     #persistentBar {
       position: fixed;
       bottom: 0;
@@ -90,14 +89,15 @@
       background: #005b90;
       color: #fff;
       font-size: 20px;
-      line-height: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       padding: 0 5px;
       box-sizing: border-box;
       display: none;
-      text-align: center;
     }
-    #persistentBar span { display: inline-block; margin: 0 5px; }
-    
+    /* 각 항목의 폭은 자동 */
+    #persistentBar span { }
   </style>
   
   <!-- Firebase 초기화: ES 모듈 방식 -->
@@ -131,7 +131,7 @@
   </script>
 </head>
 <body>
-  <!-- Persistent bottom bar: 점검자 이름, 소속, 소화기 위치 표시 -->
+  <!-- Persistent bottom bar: 좌측 점검자 이름, 가운데 소속, 우측 소화기 위치 -->
   <div id="persistentBar">
     <span id="barInspectorName"></span>
     <span id="barDept"></span>
@@ -141,17 +141,17 @@
   <!-- 페이지 0: 시작 페이지 -->
   <div id="page0" class="page active">
     <h1>소화기 안전점검</h1>
-    <!-- 예시 배경 이미지로 삽입 (원하는 이미지 URL로 교체) -->
-    <img src="https://via.placeholder.com/300x200?text=Safety+Inspection" alt="소화기 안전점검 이미지">
+    <!-- 메인 백그라운드 이미지로 삽입 (아래 URL 사용) -->
+    <img src="https://files.oaiusercontent.com/file-EfnWRH7nqt6ghyqwKkN4i2?se=2025-04-05T01%3A59%3A09Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D299%2C%20immutable%2C%20private&rscd=attachment%3B%20filename%3D%25EB%25A9%2594%25EC%259D%25B8%2520%25EC%259D%25B4%25EB%25AF%25B8%25EC%25A7%2580.png&sig=HCiUm3tTtDUQ1uVAnYr/iSNmuM5L0pec6lDyugwV1Ao%3D" alt="메인 이미지">
     <br>
     <button class="btn btn-green" onclick="goToPage(1)">점검 시작하기</button>
   </div>
   
-  <!-- 페이지 1: 점검자 이름 및 소속 입력 -->
+  <!-- 페이지 1: 점검자 이름 및 소속 입력 (좌측 상단 정렬) -->
   <div id="page1" class="page">
     <div class="container">
       <div class="input-row">
-        <label for="inspectorName">점검자의 이름:</label>
+        <label for="inspectorName">점검자 이름:</label>
         <input type="text" id="inspectorName" placeholder="이름 입력" />
       </div>
       <div class="input-row">
@@ -221,7 +221,7 @@
   </div>
   
   <script>
-    // 전역 변수: 편집 모드 시 수정할 문서 ID 저장
+    // 전역 변수: 편집 모드 사용 시 수정할 문서 ID 저장
     let editingDocId = null;
     
     // ---------- 페이지 전환 및 공통 함수 ----------
@@ -232,7 +232,7 @@
   
       // persistent bar: 페이지 2~4에 표시, 세 항목 연동
       if(pageNumber >= 2 && pageNumber <= 4) {
-        document.getElementById("persistentBar").style.display = "block";
+        document.getElementById("persistentBar").style.display = "flex";
         document.getElementById("barInspectorName").innerText = localStorage.getItem('inspectorName') || "";
         document.getElementById("barDept").innerText = localStorage.getItem('inspectorDept') || "";
         document.getElementById("barFireExtinguisherNumber").innerText = localStorage.getItem('fireExtinguisherNumber') || "";
@@ -424,10 +424,6 @@
       localStorage.setItem('inspectionResult', result);
       storeInspectionDataToFirebase();
       goToPage(5);
-    }
-    
-    function storeInspectionDataToFirestore() {
-      // (Firestore 저장 함수 이름 변경 없이 기존 함수 사용)
     }
     
     function storeInspectionDataToFirebase() {
