@@ -65,7 +65,7 @@
     #page0 { text-align: center; }
     #page0 img { max-width: 80%; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
     
-    /* 페이지 1: 컨텐츠를 좌측 상단 정렬 */
+    /* 페이지 1: 컨텐츠 좌측 상단 정렬 */
     #page1 .container {
       margin: 20px 0 0 0;
       width: 90%;
@@ -208,7 +208,7 @@
     <p>저장된 점검자 이름: <span id="savedName"></span></p>
     <p>저장된 소화기 위치: <span id="savedNumber"></span></p>
     <p>저장된 점검 결과: <span id="savedResult"></span></p>
-    <!-- "다른 소화기 점검하기" 버튼은 점검자 이름과 소속은 유지, 소화기 위치 및 촬영 데이터 초기화 후 페이지 2로 이동 -->
+    <!-- "다른 소화기 점검하기" 버튼 클릭 시, 점검자 이름과 소속은 유지하고 소화기 위치 관련 데이터만 초기화 후 페이지2로 이동 -->
     <button class="btn" onclick="restartInspection()">다른 소화기 점검하기</button>
     <button class="btn" onclick="goToPage(6); loadAdminResults();">관리자 결과 확인</button>
   </div>
@@ -221,7 +221,7 @@
   </div>
   
   <script>
-    // 전역 변수: 편집 모드 사용 시 수정할 문서 ID 저장
+    // 전역 변수: 편집 모드 시 수정할 문서 ID 저장
     let editingDocId = null;
     
     // ---------- 페이지 전환 및 공통 함수 ----------
@@ -438,15 +438,13 @@
       };
       
       if(editingDocId) {
-        window.updateDoc(window.doc(window.db, "inspections", editingDocId), {
-          gaugeImage: localStorage.getItem('gaugeImage') || '',
-          timestamp: new Date().toISOString()
-        }).then(() => {
-          console.log("문서 업데이트 완료, ID: ", editingDocId);
-          editingDocId = null;
-        }).catch((error) => {
-          console.error("문서 업데이트 오류: ", error);
-        });
+        window.updateDoc(window.doc(window.db, "inspections", editingDocId), data)
+          .then(() => {
+            console.log("문서 업데이트 완료, ID: ", editingDocId);
+            editingDocId = null;
+          }).catch((error) => {
+            console.error("문서 업데이트 오류: ", error);
+          });
       } else {
         window.addDoc(window.collection(window.db, "inspections"), data)
           .then((docRef) => {
